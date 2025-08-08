@@ -93,15 +93,30 @@ def translate_video(input_path, language):
     # 3) Build output file path in videos-subtitles
     output_path = SUBTITLES_DIR / input_path.name
 
-    # 4) Mux SRT into MP4 without burning in
+    # 4) Add subtitles
+    # # Mux SRT into MP4 without burning in
+    # ffmpeg_cmd = [
+    #     "ffmpeg",
+    #     "-y",
+    #     "-i", str(input_path),   # video
+    #     "-i", str(srt_path),     # subtitles
+    #     "-c", "copy",
+    #     "-c:s", "mov_text",
+    #     "-metadata:s:s:0", f"language={language}",
+    #     str(output_path),
+    # ]
+
+    # Burn in SRT into the video (hard subtitles)
     ffmpeg_cmd = [
         "ffmpeg",
         "-y",
-        "-i", str(input_path),   # video
-        "-i", str(srt_path),     # subtitles
-        "-c", "copy",
-        "-c:s", "mov_text",
-        "-metadata:s:s:0", f"language={language}",
+        "-i", str(input_path),                         # video
+        # burn-in requires filtering; make sure ffmpeg was built with libass
+        "-vf", f"subtitles={srt_path.as_posix()}",     # overlay SRT onto frames
+        "-c:v", "libx264",                             # re-encode video
+        "-crf", "18",                                  # quality (lower = better; 18–23 common)
+        "-preset", "medium",                           # encoding speed/efficiency tradeoff
+        "-c:a", "copy",                                # keep original audio
         str(output_path),
     ]
     subprocess.run(ffmpeg_cmd, check=True)
