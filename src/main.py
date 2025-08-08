@@ -30,11 +30,11 @@ HTML_PAGE = """
         <label>Video Language:</label><br>
         <select name="language" required>
             <option value="hi">Hindi</option>
-            <option value="ge">German</option>
+            <option value="de">German</option>
             <option value="es">Spanish</option>
             <option value="fr">French</option>
-            <option value="cn">Chinese</option>
-            <option value="jp">Japanese</option>
+            <option value="zh">Chinese</option>
+            <option value="ja">Japanese</option>
             <option value="ko">Korean</option>
             <option value="ro">Romanian</option>
         </select><br><br>
