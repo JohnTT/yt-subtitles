@@ -2,6 +2,7 @@ from flask import Flask, render_template_string, request, send_from_directory, r
 import os
 import subprocess
 import shlex
+import whisper
 from pathlib import Path
 
 app = Flask(__name__)
@@ -28,10 +29,14 @@ HTML_PAGE = """
 
         <label>Video Language:</label><br>
         <select name="language" required>
-            <option value="en">English</option>
             <option value="hi">Hindi</option>
+            <option value="ge">German</option>
             <option value="es">Spanish</option>
             <option value="fr">French</option>
+            <option value="cn">Chinese</option>
+            <option value="jp">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="ro">Romanian</option>
         </select><br><br>
 
         <button type="submit">Download & Translate</button>
@@ -49,9 +54,53 @@ HTML_PAGE = """
 </html>
 """
 
-def translate_video(input_path, output_path, language):
-    import shutil
-    shutil.copy(input_path, output_path)
+import subprocess
+from pathlib import Path
+
+def translate_video(input_path, language):
+    input_path = Path(input_path)
+
+    # Ensure output directories exist
+    srt_dir = DOWNLOADS_DIR
+    srt_dir.mkdir(parents=True, exist_ok=True)
+    SUBTITLES_DIR.mkdir(parents=True, exist_ok=True)
+
+    # 1) Run Whisper to create the SRT in videos-downloads
+    whisper_cmd = [
+        "whisper",
+        str(input_path),
+        "--model", "large",
+        "--language", language,
+        "--task", "translate",
+        "--output_format", "srt",
+        "--output_dir", str(srt_dir),
+    ]
+    subprocess.run(whisper_cmd, check=True)
+
+    # 2) Locate the generated SRT
+    srt_path = srt_dir / (input_path.with_suffix(".srt").name)
+    if not srt_path.exists():
+        candidates = list(srt_dir.glob(input_path.stem + "*.srt"))
+        if not candidates:
+            raise FileNotFoundError(f"Could not find SRT for {input_path.name} in {srt_dir}")
+        srt_path = candidates[0]
+
+    # 3) Build output file path in videos-subtitles
+    output_path = SUBTITLES_DIR / input_path.name
+
+    # 4) Mux SRT into MP4 without burning in
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-y",
+        "-i", str(input_path),   # video
+        "-i", str(srt_path),     # subtitles
+        "-c", "copy",
+        "-c:s", "mov_text",
+        "-metadata:s:s:0", f"language={language}",
+        str(output_path),
+    ]
+    subprocess.run(ffmpeg_cmd, check=True)
+    app.logger.info(f"Video with subtitles written to {str(output_path)}")
 
 @app.route("/", methods=["GET"])
 def index():
@@ -64,7 +113,8 @@ def download_video():
     language = request.form.get("language")
 
     try:
-        cmd = f'yt-dlp -f "bv*+ba/best" --merge-output-format mp4 -o "{DOWNLOADS_DIR}/%(title)s.%(ext)s" {shlex.quote(youtube_link)}'
+        cmd = f'yt-dlp -f "bv*+ba/best" --merge-output-format mp4 -o "{DOWNLOADS_DIR}/%(title)s.%(ext)s" \
+            {shlex.quote(youtube_link)}'
         subprocess.run(cmd, shell=True, check=True)
 
         downloaded_files = sorted(
@@ -79,7 +129,7 @@ def download_video():
         output_path = SUBTITLES_DIR / latest_file.name
 
         # Run translation
-        translate_video(str(latest_file), str(output_path), language)
+        translate_video(str(latest_file), language)
 
         # Delete original download after translation completes
         try:
@@ -87,6 +137,15 @@ def download_video():
             app.logger.info("Deleted original file: %s", latest_file)
         except Exception as del_err:
             app.logger.error("Failed to delete %s: %s", latest_file, del_err)
+
+        # Delete the corresponding .srt file in videos-downloads
+        srt_path = latest_file.with_suffix(".srt")
+        try:
+            if srt_path.exists():
+                srt_path.unlink()
+                app.logger.info("Deleted subtitle file: %s", srt_path)
+        except Exception as del_err:
+            app.logger.error("Failed to delete %s: %s", srt_path, del_err)
 
     except Exception as e:
         app.logger.error("Error downloading/translating: %s", e)
