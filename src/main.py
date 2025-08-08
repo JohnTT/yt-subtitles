@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, send_from_directory, redirect, url_for
+from flask import Flask, render_template_string, request, send_from_directory, redirect, url_for, abort
 import os
 import subprocess
 import shlex
@@ -45,7 +45,12 @@ HTML_PAGE = """
     <h3>Translated Videos Ready for Download</h3>
     <ul>
         {% for file in files %}
-            <li><a href="{{ url_for('download_file', filename=file) }}">{{ file }}</a></li>
+            <li>
+                <a href="{{ url_for('download_file', filename=file) }}">{{ file }}</a>
+                <form method="post" action="{{ url_for('delete_file', filename=file) }}" style="display:inline;">
+                    <button type="submit" onclick="return confirm('Delete {{ file }}?')">Delete</button>
+                </form>
+            </li>
         {% else %}
             <li>No files yet.</li>
         {% endfor %}
@@ -113,8 +118,7 @@ def download_video():
     language = request.form.get("language")
 
     try:
-        cmd = f'yt-dlp -f "bv*+ba/best" --merge-output-format mp4 -o "{DOWNLOADS_DIR}/%(title)s.%(ext)s" \
-            {shlex.quote(youtube_link)}'
+        cmd = f'yt-dlp -f "bv*+ba/best" --merge-output-format mp4 -o "{DOWNLOADS_DIR}/%(title)s.%(ext)s" {shlex.quote(youtube_link)}'
         subprocess.run(cmd, shell=True, check=True)
 
         downloaded_files = sorted(
@@ -126,9 +130,8 @@ def download_video():
             raise RuntimeError("No video was downloaded.")
         
         latest_file = downloaded_files[0]
-        output_path = SUBTITLES_DIR / latest_file.name
 
-        # Run translation
+        # Run translation (creates muxed file in SUBTITLES_DIR)
         translate_video(str(latest_file), language)
 
         # Delete original download after translation completes
@@ -157,7 +160,32 @@ def download_file(filename):
     target = SUBTITLES_DIR / filename
     if not target.exists():
         app.logger.error("Requested file not found: %s", target)
+        abort(404)
     return send_from_directory(str(SUBTITLES_DIR), filename, as_attachment=True)
+
+# NEW: delete route (POST) to remove a translated video safely
+@app.post("/videos-subtitles/delete/<path:filename>")
+def delete_file(filename):
+    # Resolve and ensure the target is within SUBTITLES_DIR (prevent path traversal)
+    target = (SUBTITLES_DIR / filename).resolve()
+    try:
+        target.relative_to(SUBTITLES_DIR.resolve())
+    except ValueError:
+        app.logger.warning("Blocked path traversal attempt: %s", target)
+        abort(400, description="Invalid filename")
+
+    if not target.exists() or not target.is_file():
+        app.logger.error("File to delete not found: %s", target)
+        abort(404)
+
+    try:
+        target.unlink()
+        app.logger.info("Deleted translated video: %s", target)
+    except Exception as e:
+        app.logger.error("Failed to delete %s: %s", target, e)
+        abort(500, description="Failed to delete file")
+
+    return redirect(url_for("index"))
 
 if __name__ == "__main__":
     app.run(port=9000, debug=True)
