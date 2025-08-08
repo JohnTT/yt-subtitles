@@ -1,0 +1,4 @@
+openai-whisper==20250625
+setuptools-rust
+flask
+pytube
