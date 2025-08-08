@@ -1,11 +1,10 @@
-from flask import Flask, render_template_string, request, send_from_directory, redirect, url_for, flash
+from flask import Flask, render_template_string, request, send_from_directory, redirect, url_for
 import os
 import subprocess
 import shlex
 from pathlib import Path
 
 app = Flask(__name__)
-app.secret_key = "secret"  # Required for flash messages
 
 # Resolve paths relative to this file, not the working directory
 BASE_DIR = Path(__file__).resolve().parents[1]  # repo root (parent of src/)
@@ -38,16 +37,6 @@ HTML_PAGE = """
         <button type="submit">Download & Translate</button>
     </form>
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul style="color:red;">
-          {% for msg in messages %}
-            <li>{{ msg }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-
     <h3>Translated Videos Ready for Download</h3>
     <ul>
         {% for file in files %}
@@ -66,7 +55,7 @@ def translate_video(input_path, output_path, language):
 
 @app.route("/", methods=["GET"])
 def index():
-    files = [f for f in os.listdir(SUBTITLES_DIR) if os.path.isfile(SUBTITLES_DIR / f)]
+    files = [f for f in os.listdir(SUBTITLES_DIR) if (SUBTITLES_DIR / f).is_file()]
     return render_template_string(HTML_PAGE, files=files)
 
 @app.route("/download", methods=["POST"])
@@ -89,19 +78,27 @@ def download_video():
         latest_file = downloaded_files[0]
         output_path = SUBTITLES_DIR / latest_file.name
 
+        # Run translation
         translate_video(str(latest_file), str(output_path), language)
 
-        flash(f"Video '{latest_file.name}' downloaded and translated!")
-    except subprocess.CalledProcessError as e:
-        flash(f"yt-dlp failed: {e}")
+        # Delete original download after translation completes
+        try:
+            latest_file.unlink()
+            app.logger.info("Deleted original file: %s", latest_file)
+        except Exception as del_err:
+            app.logger.error("Failed to delete %s: %s", latest_file, del_err)
+
     except Exception as e:
-        flash(f"Error: {e}")
+        app.logger.error("Error downloading/translating: %s", e)
 
     return redirect(url_for("index"))
 
 @app.route("/videos-subtitles/<path:filename>")
 def download_file(filename):
+    target = SUBTITLES_DIR / filename
+    if not target.exists():
+        app.logger.error("Requested file not found: %s", target)
     return send_from_directory(str(SUBTITLES_DIR), filename, as_attachment=True)
 
 if __name__ == "__main__":
-    app.run(port=9000, debug=True, use_reloader=True)
+    app.run(port=9000, debug=True)
