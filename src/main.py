@@ -3,6 +3,7 @@ import subprocess
 import shlex
 import time
 import errno
+import subprocess
 from pathlib import Path
 from threading import Lock
 
@@ -61,8 +62,17 @@ HTML_PAGE = """
 </html>
 """
 
-import subprocess
-from pathlib import Path
+def _escape_for_ffmpeg_subtitles(p: Path) -> str:
+    s = p.as_posix()
+    # Escape characters that are special to ffmpeg filter args
+    s = (s.replace("\\", "\\\\")  # backslash first
+           .replace(":", r"\:")
+           .replace(",", r"\,")
+           .replace("'", r"\'")
+           .replace("[", r"\[")
+           .replace("]", r"\]")
+           .replace(";", r"\;"))
+    return s
 
 def translate_video(input_path, language):
     input_path = Path(input_path)
@@ -74,7 +84,7 @@ def translate_video(input_path, language):
 
     # 1) Run Whisper to create the SRT in videos-downloads
     whisper_cmd = [
-        "whisper-ctranslate2",
+        "/home/jchen/Documents/Faster-Whisper-XXL/faster-whisper-xxl",
         str(input_path),
         "--model", "large-v2",
         "--language", language,
@@ -109,16 +119,13 @@ def translate_video(input_path, language):
     # ]
 
     # Burn in SRT into the video (hard subtitles)
+    filter_arg = f"subtitles=filename={_escape_for_ffmpeg_subtitles(srt_path)}"
     ffmpeg_cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", str(input_path),                         # video
-        # burn-in requires filtering; make sure ffmpeg was built with libass
-        "-vf", f"subtitles={srt_path.as_posix()}",     # overlay SRT onto frames
-        "-c:v", "libx264",                             # re-encode video
-        "-crf", "18",                                  # quality (lower = better; 18–23 common)
-        "-preset", "medium",                           # encoding speed/efficiency tradeoff
-        "-c:a", "copy",                                # keep original audio
+        "ffmpeg", "-y",
+        "-i", str(input_path),
+        "-vf", filter_arg,
+        "-c:v", "libx264", "-crf", "18", "-preset", "medium",
+        "-c:a", "copy",
         str(output_path),
     ]
     subprocess.run(ffmpeg_cmd, check=True)
