@@ -28,7 +28,7 @@ FNAME_NOEXT="${INPUT_BASE%.*}"
 EXT="${INPUT_BASE##*.}"
 
 # Where to place the SRT Whisper generates
-SRT_DIR="$INPUT_BASE"
+SRT_DIR="$INPUT_DIR"
 
 echo ">> Generating English subtitles from $LANGUAGE audio with Whisper..."
 whisper \
@@ -37,7 +37,7 @@ whisper \
   --language "$LANGUAGE" \
   --task translate \
   --output_format srt \
-  --output_dir "$INPUT_BASE"
+  --output_dir "$INPUT_DIR"
 
 # Whisper names the output like: <basename>.<format>
 SRT_PATH="$SRT_DIR/$FNAME_NOEXT.srt"
