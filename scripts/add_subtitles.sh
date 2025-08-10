@@ -30,7 +30,7 @@ EXT="${INPUT_BASE##*.}"
 # Where to place the SRT Whisper generates
 SRT_DIR="$INPUT_BASE"
 
-echo ">> Generating subtitles with Whisper..."
+echo ">> Generating English subtitles from $LANGUAGE audio with Whisper..."
 whisper \
   "$INPUT_PATH" \
   --model large \
