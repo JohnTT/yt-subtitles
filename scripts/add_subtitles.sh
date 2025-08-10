@@ -18,6 +18,10 @@ if [[ ! -f "$INPUT_PATH" ]]; then
   exit 1
 fi
 
+whisper() {
+    /home/jchen/Documents/Faster-Whisper-XXL/faster-whisper-xxl "$@"
+}
+
 command -v whisper >/dev/null 2>&1 || { echo "ERROR: 'whisper' CLI not found in PATH."; exit 1; }
 command -v ffmpeg  >/dev/null 2>&1 || { echo "ERROR: 'ffmpeg' not found in PATH."; exit 1; }
 
