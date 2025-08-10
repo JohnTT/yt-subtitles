@@ -7,9 +7,6 @@ from pathlib import Path
 from threading import Lock
 
 from flask import Flask, render_template_string, request, send_from_directory, redirect, url_for, abort
-from faster_whisper import WhisperModel
-
-model = WhisperModel("large-v2", device="cuda", compute_type="float16")
 app = Flask(__name__)
 
 # Resolve paths relative to this file, not the working directory
@@ -77,7 +74,7 @@ def translate_video(input_path, language):
 
     # 1) Run Whisper to create the SRT in videos-downloads
     whisper_cmd = [
-        "whisper",
+        "whisper-ctranslate2",
         str(input_path),
         "--model", "large-v2",
         "--language", language,
