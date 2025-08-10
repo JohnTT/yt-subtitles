@@ -37,7 +37,7 @@ SRT_DIR="$INPUT_DIR"
 echo ">> Generating English subtitles from $LANGUAGE audio with Whisper..."
 whisper \
   "$INPUT_PATH" \
-  --model large \
+  --model large-v2 \
   --language "$LANGUAGE" \
   --task translate \
   --output_format srt \

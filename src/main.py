@@ -76,7 +76,7 @@ def translate_video(input_path, language):
     whisper_cmd = [
         "whisper",
         str(input_path),
-        "--model", "large",
+        "--model", "large-v2",
         "--language", language,
         "--task", "translate",
         "--output_format", "srt",
