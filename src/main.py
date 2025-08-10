@@ -2,7 +2,10 @@ from flask import Flask, render_template_string, request, send_from_directory, r
 import os
 import subprocess
 import shlex
+import time
+import errno
 from pathlib import Path
+from threading import Lock
 
 app = Flask(__name__)
 
@@ -126,46 +129,104 @@ def index():
     files = [f for f in os.listdir(SUBTITLES_DIR) if (SUBTITLES_DIR / f).is_file()]
     return render_template_string(HTML_PAGE, files=files)
 
+# ---- Mutexes ----
+processing_lock = Lock()  # in-process (threads) lock
+LOCK_FILE = Path(DOWNLOADS_DIR) / ".download_processing.lock"
+
+def acquire_file_lock(lock_path: Path, timeout: float = 1.0):
+    """
+    Cross-process lock using fcntl (Unix). If not available (e.g., Windows),
+    we fall back to a best-effort exclusive-create file lock.
+    Returns an open file object if acquired, else None.
+    """
+    start = time.time()
+    f = None
+    while time.time() - start < timeout:
+        try:
+            # Try exclusive create; if it exists, someone else holds it.
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            f = os.fdopen(fd, "w")
+            f.write(str(os.getpid()))
+            f.flush()
+            return f
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+            time.sleep(0.1)
+    return None
+
+def release_file_lock(lock_path: Path, f):
+    try:
+        if f:
+            f.close()
+        # Removing the file signals the lock is free
+        if lock_path.exists():
+            lock_path.unlink(missing_ok=True)
+    except Exception:
+        pass
+
 @app.route("/download", methods=["POST"])
 def download_video():
     youtube_link = request.form.get("youtube_link")
     language = request.form.get("language")
 
+    # Try to acquire in-process lock quickly
+    if not processing_lock.acquire(timeout=0.5):
+        return ("Another video is being processed. Please try again in a moment.", 429)
+
+    file_lock_handle = None
     try:
-        cmd = f'yt-dlp -f "bv*+ba/best" --merge-output-format mp4 -o "{DOWNLOADS_DIR}/%(title)s.%(ext)s" {shlex.quote(youtube_link)}'
-        subprocess.run(cmd, shell=True, check=True)
+        # Try to acquire cross-process lock (in case of multiple workers)
+        file_lock_handle = acquire_file_lock(LOCK_FILE, timeout=1.5)
+        if file_lock_handle is None:
+            return ("Another video is being processed. Please try again in a moment.", 429)
 
-        downloaded_files = sorted(
-            [DOWNLOADS_DIR / f for f in os.listdir(DOWNLOADS_DIR)],
-            key=lambda p: p.stat().st_mtime,
-            reverse=True
-        )
-        if not downloaded_files:
-            raise RuntimeError("No video was downloaded.")
-        
-        latest_file = downloaded_files[0]
-
-        # Run translation (creates muxed file in SUBTITLES_DIR)
-        translate_video(str(latest_file), language)
-
-        # Delete original download after translation completes
         try:
-            latest_file.unlink()
-            app.logger.info("Deleted original file: %s", latest_file)
-        except Exception as del_err:
-            app.logger.error("Failed to delete %s: %s", latest_file, del_err)
+            cmd = (
+                f'yt-dlp -f "bv*+ba/best" --merge-output-format mp4 '
+                f'-o "{DOWNLOADS_DIR}/%(title)s.%(ext)s" {shlex.quote(youtube_link)}'
+            )
+            subprocess.run(cmd, shell=True, check=True)
 
-        # Delete the corresponding .srt file in videos-downloads
-        srt_path = latest_file.with_suffix(".srt")
-        try:
-            if srt_path.exists():
-                srt_path.unlink()
-                app.logger.info("Deleted subtitle file: %s", srt_path)
-        except Exception as del_err:
-            app.logger.error("Failed to delete %s: %s", srt_path, del_err)
+            downloaded_files = sorted(
+                [DOWNLOADS_DIR / f for f in os.listdir(DOWNLOADS_DIR)],
+                key=lambda p: p.stat().st_mtime,
+                reverse=True
+            )
+            if not downloaded_files:
+                raise RuntimeError("No video was downloaded.")
+            
+            latest_file = downloaded_files[0]
 
-    except Exception as e:
-        app.logger.error("Error downloading/translating: %s", e)
+            # Run translation (creates muxed file in SUBTITLES_DIR)
+            translate_video(str(latest_file), language)
+
+            # Delete original download after translation completes
+            try:
+                latest_file.unlink()
+                app.logger.info("Deleted original file: %s", latest_file)
+            except Exception as del_err:
+                app.logger.error("Failed to delete %s: %s", latest_file, del_err)
+
+            # Delete the corresponding .srt file in videos-downloads
+            srt_path = latest_file.with_suffix(".srt")
+            try:
+                if srt_path.exists():
+                    srt_path.unlink()
+                    app.logger.info("Deleted subtitle file: %s", srt_path)
+            except Exception as del_err:
+                app.logger.error("Failed to delete %s: %s", srt_path, del_err)
+
+        except Exception as e:
+            app.logger.error("Error downloading/translating: %s", e)
+        finally:
+            # Always release cross-process lock
+            release_file_lock(LOCK_FILE, file_lock_handle)
+
+    finally:
+        # Always release in-process lock
+        if processing_lock.locked():
+            processing_lock.release()
 
     return redirect(url_for("index"))
 
