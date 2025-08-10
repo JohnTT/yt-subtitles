@@ -2,7 +2,6 @@ from flask import Flask, render_template_string, request, send_from_directory, r
 import os
 import subprocess
 import shlex
-import whisper
 from pathlib import Path
 
 app = Flask(__name__)
