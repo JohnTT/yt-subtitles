@@ -165,6 +165,7 @@ def release_file_lock(lock_path: Path, f):
     except Exception:
         pass
 
+VALID_EXTS = {".mp4", ".mkv", ".webm", ".m4a", ".mp3", ".wav", ".flac", ".aac", ".ogg"}
 @app.route("/download", methods=["POST"])
 def download_video():
     youtube_link = request.form.get("youtube_link")
@@ -189,9 +190,14 @@ def download_video():
             subprocess.run(cmd, shell=True, check=True)
 
             downloaded_files = sorted(
-                [DOWNLOADS_DIR / f for f in os.listdir(DOWNLOADS_DIR)],
+                [
+                    p for p in DOWNLOADS_DIR.iterdir()
+                    if p.is_file()
+                    and not p.name.startswith(".")
+                    and p.suffix.lower() in VALID_EXTS
+                ],
                 key=lambda p: p.stat().st_mtime,
-                reverse=True
+                reverse=True,
             )
             if not downloaded_files:
                 raise RuntimeError("No video was downloaded.")
