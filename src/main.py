@@ -40,6 +40,8 @@ HTML_PAGE = """
             <option value="ja">Japanese</option>
             <option value="ko">Korean</option>
             <option value="ro">Romanian</option>
+            <option value="kn">Kannada</option>
+            <option value="te">Telugu</option>
         </select><br><br>
 
         <button type="submit">Download & Translate</button>
