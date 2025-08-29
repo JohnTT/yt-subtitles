@@ -86,7 +86,7 @@ def translate_video(input_path, language):
 
     # 1) Run Whisper to create the SRT in videos-downloads
     whisper_cmd = [
-        "/home/jchen/Documents/Faster-Whisper-XXL/faster-whisper-xxl",
+        "~/Documents/Faster-Whisper-XXL/faster-whisper-xxl",
         str(input_path),
         "--model", "large-v2",
         "--language", language,

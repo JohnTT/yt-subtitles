@@ -16,7 +16,7 @@ if [[ ! -f "$INPUT_PATH" ]]; then
 fi
 
 whisper() {
-    /home/jchen/Documents/Faster-Whisper-XXL/faster-whisper-xxl "$@"
+  ~/Documents/Faster-Whisper-XXL/faster-whisper-xxl "$@"
 }
 
 command -v whisper >/dev/null 2>&1 || { echo "ERROR: 'whisper' CLI not found in PATH."; exit 1; }
