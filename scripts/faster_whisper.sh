@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: ./add_subs.sh "input video.mp4" en
-# Requires: whisper (OpenAI Whisper CLI), ffmpeg
-
 if [[ $# -lt 2 ]]; then
   echo "Usage: $(basename "$0") <input_file> <language>"
   echo "  <language> can be a code like 'en', 'es', 'fr', or a name like 'English'"
