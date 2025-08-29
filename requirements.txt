@@ -4,3 +4,4 @@ flask
 yt-dlp
 faster-whisper~=1.2.0
 whisper-ctranslate2~=0.5.4
+insanely-fast-whisper==0.0.15
