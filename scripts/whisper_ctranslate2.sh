@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source ../.venv/bin/activate
+
+# Resolve the directory this script lives in
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Repo root is one level up from scripts/
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Activate the virtual environment
+source "$REPO_ROOT/.venv/bin/activate"
 
 if [[ $# -lt 2 ]]; then
   echo "Usage: $(basename "$0") <input_file> <language>"
