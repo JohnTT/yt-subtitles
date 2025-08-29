@@ -91,5 +91,5 @@ MIT License
 **Credits:**  
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)  
 - [Faster Whisper XXL](https://github.com/guillaumekln/faster-whisper)  
-- [whisper-ctranslate2](https://github.com/guillaumekln/whisper-ctranslate2)  
+- [whisper-ctranslate2](https://github.com/Softcatala/whisper-ctranslate2)  
 - [Flask](https://flask.palletsprojects.com/)
