@@ -64,18 +64,6 @@ HTML_PAGE = """
 </html>
 """
 
-def _escape_for_ffmpeg_subtitles(p: Path) -> str:
-    s = p.as_posix()
-    # Escape characters that are special to ffmpeg filter args
-    s = (s.replace("\\", "\\\\")  # backslash first
-           .replace(":", r"\:")
-           .replace(",", r"\,")
-           .replace("'", r"\'")
-           .replace("[", r"\[")
-           .replace("]", r"\]")
-           .replace(";", r"\;"))
-    return s
-
 def translate_video(input_path, language):
     input_path = Path(input_path)
 
@@ -86,7 +74,7 @@ def translate_video(input_path, language):
 
     # 1) Run Whisper to create the SRT in videos-downloads
     whisper_cmd = [
-        "~/Documents/Faster-Whisper-XXL/faster-whisper-xxl",
+        "whisper-ctranslate2",
         str(input_path),
         "--model", "large-v2",
         "--language", language,
@@ -108,28 +96,18 @@ def translate_video(input_path, language):
     output_path = SUBTITLES_DIR / input_path.name
 
     # 4) Add subtitles
-    # # Mux SRT into MP4 without burning in
-    # ffmpeg_cmd = [
-    #     "ffmpeg",
-    #     "-y",
-    #     "-i", str(input_path),   # video
-    #     "-i", str(srt_path),     # subtitles
-    #     "-c", "copy",
-    #     "-c:s", "mov_text",
-    #     "-metadata:s:s:0", f"language={language}",
-    #     str(output_path),
-    # ]
-
-    # Burn in SRT into the video (hard subtitles)
-    filter_arg = f"subtitles=filename={_escape_for_ffmpeg_subtitles(srt_path)}"
+    # Mux SRT into MP4 without burning in
     ffmpeg_cmd = [
-        "ffmpeg", "-y",
-        "-i", str(input_path),
-        "-vf", filter_arg,
-        "-c:v", "libx264", "-crf", "18", "-preset", "medium",
-        "-c:a", "copy",
+        "ffmpeg",
+        "-y",
+        "-i", str(input_path),   # video
+        "-i", str(srt_path),     # subtitles
+        "-c", "copy",
+        "-c:s", "mov_text",
+        "-metadata:s:s:0", f"language={language}",
         str(output_path),
     ]
+
     subprocess.run(ffmpeg_cmd, check=True)
     app.logger.info(f"Video with subtitles written to {str(output_path)}")
 
