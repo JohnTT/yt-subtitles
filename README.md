@@ -5,7 +5,7 @@ This project provides a web interface to download YouTube videos, automatically 
 ## Features
 
 - Download YouTube videos via [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- Translate audio to English subtitles using [Faster Whisper XXL](https://github.com/guillaumekln/faster-whisper) or [whisper-ctranslate2](https://github.com/guillaumekln/whisper-ctranslate2)
+- Translate audio to English subtitles using [whisper-ctranslate2](https://github.com/guillaumekln/whisper-ctranslate2)
 - Burn subtitles into videos (hard subs) or mux as soft subtitles (see scripts)
 - Simple Flask web UI for submitting jobs and downloading results
 - Safe concurrent processing with file and thread locks
@@ -17,7 +17,6 @@ This project provides a web interface to download YouTube videos, automatically 
 requirements.txt
 run.sh
 scripts/
-    faster_whisper.sh
     whisper_ctranslate2.sh
 src/
     main.py
@@ -47,7 +46,7 @@ videos-subtitles/
 
 3. Install [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://ffmpeg.org/) if not already available.
 
-4. Download and set up [Faster Whisper XXL](https://github.com/guillaumekln/faster-whisper) and/or [whisper-ctranslate2](https://github.com/guillaumekln/whisper-ctranslate2) as needed. Update script paths if necessary.
+4. Download and set up [whisper-ctranslate2](https://github.com/guillaumekln/whisper-ctranslate2) as needed. Update script paths if necessary.
 
 ## Usage
 
@@ -65,13 +64,11 @@ Open [http://localhost:9000](http://localhost:9000) in your browser.
 
 ## Scripts
 
-- `scripts/faster_whisper.sh`: Uses Faster Whisper XXL for translation and muxing.
 - `scripts/whisper_ctranslate2.sh`: Uses whisper-ctranslate2 for translation and muxing.
 
-You can run these scripts directly for CLI usage:
+You can run this script directly for CLI usage:
 
 ```sh
-./scripts/faster_whisper.sh <input_file> <language>
 ./scripts/whisper_ctranslate2.sh <input_file> <language>
 ```
 
@@ -90,6 +87,5 @@ MIT License
 
 **Credits:**  
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)  
-- [Faster Whisper XXL](https://github.com/guillaumekln/faster-whisper)  
 - [whisper-ctranslate2](https://github.com/Softcatala/whisper-ctranslate2)  
 - [Flask](https://flask.palletsprojects.com/)
