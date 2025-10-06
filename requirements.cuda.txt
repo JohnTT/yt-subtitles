@@ -1,0 +1,9 @@
+--extra-index-url https://download.pytorch.org/whl/cu116
+torch
+torchvision
+torchaudio
+openai-whisper==20250625
+setuptools-rust
+flask
+yt-dlp
+whisper-ctranslate2~=0.5.4
