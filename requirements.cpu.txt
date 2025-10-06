@@ -1,7 +1,6 @@
 torch
 torchvision
 torchaudio
-
 openai-whisper==20250625
 setuptools-rust
 flask
