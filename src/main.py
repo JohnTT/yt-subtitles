@@ -1,13 +1,14 @@
 from nicegui import ui
+from tabs import upload, youtube  # import the tab modules
 
 with ui.tabs().classes('w-full') as tabs:
-    upload = ui.tab('Upload')
-    youtube = ui.tab('YouTube')
+    upload_tab = ui.tab('Upload')
+    youtube_tab = ui.tab('YouTube')
 
-with ui.tab_panels(tabs, value=youtube).classes('w-full'):
-    with ui.tab_panel(upload):
-        ui.label('Upload tab')
-    with ui.tab_panel(youtube):
-        ui.label('YouTube tab')
+with ui.tab_panels(tabs, value=youtube_tab).classes('w-full'):
+    with ui.tab_panel(upload_tab):
+        upload.content()  # load the Upload tab UI
+    with ui.tab_panel(youtube_tab):
+        youtube.content()  # load the YouTube tab UI
 
 ui.run()
