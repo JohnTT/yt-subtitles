@@ -1,11 +1,10 @@
 import os
 from whisper.whisper import whisper_model
-
 from nicegui import events, ui
 
 UPLOAD_DIR = 'data/uploads'
 ALLOWED_EXTENSIONS = {'m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg'}
-MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 MAX_FILE_SIZE_MB = MAX_FILE_SIZE / (1024 ** 2)
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -20,21 +19,22 @@ def content():
         # Validate file type
         if extension not in ALLOWED_EXTENSIONS:
             ui.notify(f'❌ Unsupported file type: {extension}', color='red')
+            return
 
-        # Save the file
+        # Save uploaded audio
         audio_path = os.path.join(UPLOAD_DIR, filename)
         await e.file.save(audio_path)
         ui.notify(f'✅ Saved: {filename}')
 
-        # Build output path (same name, but with .srt extension)
+        # Build output SRT file path
         base_name = os.path.splitext(filename)[0]
         srt_path = os.path.join(UPLOAD_DIR, f"{base_name}.srt")
 
-        # Transcribe and translate the audio
+        # Transcribe and translate
         segments, info = whisper_model.transcribe(audio_path, beam_size=5, task="translate")
         print(f"Filename: {filename}, Detected language: {info.language}, Probability: {info.language_probability:.2f}")
 
-        # Write translated subtitles to .srt file
+        # Write subtitles to SRT
         with open(srt_path, "w", encoding="utf-8") as srt_file:
             for i, segment in enumerate(segments, start=1):
                 def srt_time(seconds):
@@ -50,8 +50,16 @@ def content():
                 text = segment.text.strip()
                 srt_file.write(f"{i}\n{start} --> {end}\n{text}\n\n")
 
-        ui.notify(f'✅ Translation complete: {srt_path}')
-        
+        ui.notify(f'✅ Translation complete!')
+
+        # Show download button for SRT file
+        with ui.card().classes('p-4'):
+            ui.label('🎉 Your translated subtitle file is ready!')
+            ui.button(
+                '⬇️ Download Translated SRT',
+                on_click=lambda p=srt_path: ui.download.file(p)
+            )
+
     def rejected_handler(e):
         ui.notify(f'ERROR: File larger than {MAX_FILE_SIZE_MB:.0f} MB', color='red')
 
