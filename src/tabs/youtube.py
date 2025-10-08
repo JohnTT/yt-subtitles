@@ -1,4 +1,5 @@
 import os
+from whisper.whisper import whisper_model
 
 from nicegui import ui
 
