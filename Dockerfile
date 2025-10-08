@@ -12,9 +12,11 @@ RUN apt-get update && \
 # Copy requirement files first for caching
 COPY requirements.cpu.txt ./requirements.txt
 
-# Install dependencies
+# Create virtual environment and install dependencies in one shell
 RUN pip install uv
-RUN uv venv && uv pip sync requirements.txt
+RUN uv venv && \
+    . .venv/bin/activate && \
+    uv pip sync requirements.txt
 
 # Copy the application code
 COPY src ./src
@@ -34,4 +36,4 @@ ENV PYTHONUNBUFFERED=1 \
     NICEGUI_PORT=8080
 
 # Run the app
-ENTRYPOINT ["./run.sh"]
+CMD ["./run.sh"]
