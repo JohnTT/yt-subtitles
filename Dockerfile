@@ -14,7 +14,7 @@ COPY requirements.cpu.txt ./requirements.txt
 
 # Install dependencies
 RUN pip install uv
-RUN uv pip sync --system requirements.txt
+RUN uv venv && uv pip sync requirements.txt
 
 # Copy the application code
 COPY src ./src
