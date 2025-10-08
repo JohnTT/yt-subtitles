@@ -5,6 +5,7 @@ from nicegui import ui
 UPLOAD_DIR = 'data/uploads'
 ALLOWED_EXTENSIONS = {'m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg'}
 MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
+MAX_FILE_SIZE_MB = MAX_FILE_SIZE / (1024 ** 2)
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -35,7 +36,7 @@ def content():
         ui.notify(f'✅ Saved: {filename}')
 
     def rejected_handler(e):
-        ui.notify(f'❌ Rejected file for unknown reason', color='red')
+        ui.notify(f'ERROR: File larger than {MAX_FILE_SIZE_MB:.0f} MB', color='red')
 
     ui.upload(
         label='Select file',
