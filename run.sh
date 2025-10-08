@@ -8,4 +8,4 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$REPO_ROOT/.venv/bin/activate"
 
 # Run the main script
-python "$REPO_ROOT/src/youtube.py" "$@"
+python "$REPO_ROOT/src/main.py" "$@"
