@@ -4,7 +4,6 @@ torchvision
 torchaudio
 openai-whisper==20250625
 setuptools-rust
-flask
 yt-dlp
 whisper-ctranslate2~=0.5.4
 nicegui
