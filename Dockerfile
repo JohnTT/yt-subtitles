@@ -16,7 +16,7 @@ COPY requirements.cpu.txt ./requirements.txt
 RUN pip install uv
 RUN uv venv && \
     . .venv/bin/activate && \
-    uv pip sync requirements.txt
+    uv pip install --prerelease=allow --index-strategy unsafe-best-match -r requirements.txt
 
 # Copy the application code
 COPY src ./src
