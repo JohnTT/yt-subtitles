@@ -22,11 +22,36 @@ def content():
             ui.notify(f'❌ Unsupported file type: {extension}', color='red')
 
         # Save the file
-        path = os.path.join(UPLOAD_DIR, filename)
-        await e.file.save(path)
-        
+        audio_path = os.path.join(UPLOAD_DIR, filename)
+        await e.file.save(audio_path)
         ui.notify(f'✅ Saved: {filename}')
 
+        # Build output path (same name, but with .srt extension)
+        base_name = os.path.splitext(filename)[0]
+        srt_path = os.path.join(UPLOAD_DIR, f"{base_name}.srt")
+
+        # Transcribe and translate the audio
+        segments, info = whisper_model.transcribe(audio_path, beam_size=5, task="translate")
+        print(f"Filename: {filename}, Detected language: {info.language}, Probability: {info.language_probability:.2f}")
+
+        # Write translated subtitles to .srt file
+        with open(srt_path, "w", encoding="utf-8") as srt_file:
+            for i, segment in enumerate(segments, start=1):
+                def srt_time(seconds):
+                    ms = int((seconds % 1) * 1000)
+                    s = int(seconds)
+                    hrs = s // 3600
+                    mins = (s % 3600) // 60
+                    secs = s % 60
+                    return f"{hrs:02}:{mins:02}:{secs:02},{ms:03}"
+
+                start = srt_time(segment.start)
+                end = srt_time(segment.end)
+                text = segment.text.strip()
+                srt_file.write(f"{i}\n{start} --> {end}\n{text}\n\n")
+
+        ui.notify(f'✅ Translation complete: {srt_path}')
+        
     def rejected_handler(e):
         ui.notify(f'ERROR: File larger than {MAX_FILE_SIZE_MB:.0f} MB', color='red')
 
