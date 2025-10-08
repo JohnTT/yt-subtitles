@@ -19,6 +19,7 @@ RUN uv venv && \
     uv pip install --prerelease=allow --index-strategy unsafe-best-match -r requirements.txt
 
 # Copy the application code
+COPY models ./models
 COPY src ./src
 COPY scripts ./scripts
 COPY run.sh .
