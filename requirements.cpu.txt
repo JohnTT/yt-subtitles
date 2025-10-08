@@ -5,4 +5,4 @@ openai-whisper==20250625
 setuptools-rust
 yt-dlp
 whisper-ctranslate2~=0.5.4
-nicegui
+nicegui==2.24.2

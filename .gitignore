@@ -1,3 +1,4 @@
 .venv/
 videos-downloads/
 videos-subtitles/
+__pycache__/
