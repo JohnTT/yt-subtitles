@@ -1,6 +1,6 @@
 import os
 
-from nicegui import ui
+from nicegui import events, ui
 
 UPLOAD_DIR = 'data/uploads'
 ALLOWED_EXTENSIONS = {'m4a', 'mp3', 'webm', 'mp4', 'mpga', 'wav', 'mpeg'}
@@ -12,27 +12,18 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 def content():
     ui.label('Upload tab')
 
-    def handle_upload(e):
-        filename = e.name
+    async def handle_upload(e: events.UploadEventArguments):
+        filename = e.file.name
         extension = filename.rsplit('.', 1)[-1].lower()
-        content = e.content.read()
-        size = len(content)
 
         # Validate file type
         if extension not in ALLOWED_EXTENSIONS:
             ui.notify(f'❌ Unsupported file type: {extension}', color='red')
-            return
-
-        # Validate file size
-        if size > MAX_FILE_SIZE:
-            ui.notify(f'❌ File too large: {size/1024/1024:.2f} MB (max 25 MB)', color='red')
-            return
 
         # Save the file
         path = os.path.join(UPLOAD_DIR, filename)
-        with open(path, 'wb') as f:
-            f.write(content)
-
+        await e.file.save(path)
+        
         ui.notify(f'✅ Saved: {filename}')
 
     def rejected_handler(e):
