@@ -1,7 +1,20 @@
+import signal
+import sys
 from nicegui import ui
-from tabs import upload, youtube  # import the tab modules
+from tabs import upload, youtube
+from whisper.whisper import stop_whisper_process  # new helper we’ll add
 
-# Start Web UI
+def handle_exit(signum, frame):
+    print(f"\nReceived signal {signum}, shutting down gracefully...")
+    stop_whisper_process()  # stop background worker cleanly
+    ui.shutdown()           # stop NiceGUI server
+    sys.exit(0)
+
+# Register signal handlers
+signal.signal(signal.SIGINT, handle_exit)
+signal.signal(signal.SIGTERM, handle_exit)
+
+# --- Start Web UI ---
 with ui.tabs().classes('w-full') as tabs:
     upload_tab = ui.tab('Upload Audio')
     youtube_tab = ui.tab('Translate YouTube Video')
