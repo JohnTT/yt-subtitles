@@ -11,12 +11,42 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def content():
     ui.upload(
-        label='Select file',
+        label='🎵 Select audio file',
         auto_upload=True,
         on_upload=on_upload_handler,
         on_rejected=on_rejected_handler,
         max_file_size=MAX_FILE_SIZE,
     )
+
+    # Create a section to display progress
+    ui.separator()
+    ui.label('🧠 Transcription Progress').classes('text-lg font-bold mt-4')
+
+    progress_label = ui.label('No active tasks yet.')
+    progress_bar = ui.linear_progress(value=0).props('color=blue stripe animated').classes('w-full mt-2')
+
+    # Periodically update progress bar
+    def update_progress():
+        progress = whisper.get_progress()
+        queued = progress.get('queued', 0)
+        completed = progress.get('completed', 0)
+        current = progress.get('current_task', None)
+
+        total = queued + completed + (1 if current else 0)
+        if total > 0:
+            percent = completed / total
+            progress_bar.value = percent
+        else:
+            progress_bar.value = 0
+
+        if current:
+            filename = os.path.basename(current)
+            progress_label.text = f'🔄 Processing: {filename} | Completed: {completed} | Queued: {queued}'
+        else:
+            progress_label.text = f'✅ Completed: {completed} | Waiting: {queued}'
+
+    ui.timer(10.0, update_progress)
+    ui.separator()
     show_srt_files()
 
 
@@ -31,15 +61,10 @@ async def on_upload_handler(e: events.UploadEventArguments):
     audio_path = os.path.join(UPLOAD_DIR, filename)
     await e.file.save(audio_path)
 
-    # Prepare output SRT path
     base_name = os.path.splitext(filename)[0]
     srt_path = os.path.join(UPLOAD_DIR, f"{base_name}.srt")
 
-    # Send translation request to the worker process
-    whisper.add_task(
-        audio_path,
-        srt_path,
-    )
+    whisper.add_task(audio_path, srt_path)
     ui.notify(f'✅ File uploaded and queued for translation: {filename}')
 
 def show_srt_files():
@@ -57,4 +82,4 @@ def show_srt_files():
             ui.button('⬇️ Download', on_click=lambda p=srt_path: ui.download.file(p))
 
 def on_rejected_handler(e):
-    ui.notify(f'ERROR: File larger than {MAX_FILE_SIZE_MB:.0f} MB', color='red')
+    ui.notify(f'❌ ERROR: File larger than {MAX_FILE_SIZE_MB:.0f} MB', color='red')
