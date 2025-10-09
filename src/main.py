@@ -7,7 +7,6 @@ from whisper.whisper import stop_whisper_process  # new helper we’ll add
 def handle_exit(signum, frame):
     print(f"\nReceived signal {signum}, shutting down gracefully...")
     stop_whisper_process()  # stop background worker cleanly
-    ui.shutdown()           # stop NiceGUI server
     sys.exit(0)
 
 # Register signal handlers
