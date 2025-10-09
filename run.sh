@@ -18,4 +18,5 @@ fi
 source "$VENV_PATH/bin/activate"
 
 # Run the main script
+export PYTHONUNBUFFERED=1
 python "$REPO_ROOT/src/main.py" "$@"

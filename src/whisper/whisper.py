@@ -59,7 +59,7 @@ def whisper_process(task_queue, result_queue, progress):
 
             # Perform translation
             segments, info = whisper_model.transcribe(
-                audio_path, beam_size=5, task="translate"
+                audio_path, beam_size=5, task="translate", log_progress=True,
             )
 
             # Write SRT file
