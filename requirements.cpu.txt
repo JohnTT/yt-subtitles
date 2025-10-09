@@ -8,3 +8,4 @@ whisper-ctranslate2~=0.5.4
 nicegui~=3.0
 faster-whisper
 typing-extensions
+asyncio
