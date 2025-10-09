@@ -10,7 +10,6 @@ MAX_FILE_SIZE_MB = MAX_FILE_SIZE / (1024 ** 2)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def content():
-    ui.label('Upload tab')
     ui.upload(
         label='Select file',
         auto_upload=True,

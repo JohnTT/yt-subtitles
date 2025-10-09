@@ -8,5 +8,4 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def content():
-    ui.label('YouTube tab')
-    ui.button('Play video', on_click=lambda: ui.notify('Playing video...'))
+    ui.button('YouTube Link', on_click=lambda: ui.notify('Playing video...'))
