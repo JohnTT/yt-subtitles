@@ -17,6 +17,9 @@ def content():
         on_rejected=on_rejected_handler,
         max_file_size=MAX_FILE_SIZE,
     )
+    # Display all existing SRT files
+    show_srt_files()
+
 
 async def on_upload_handler(e: events.UploadEventArguments):
     filename = e.file.name
@@ -58,13 +61,27 @@ async def on_upload_handler(e: events.UploadEventArguments):
 
     ui.notify(f'✅ Translation complete!')
 
-    # Show download button for SRT file
-    with ui.card().classes('p-4'):
-        ui.label('🎉 Your translated subtitle file is ready!')
-        ui.button(
-            '⬇️ Download Translated SRT',
-            on_click=lambda p=srt_path: ui.download.file(p)
-        )
+    # Refresh the SRT file list
+    show_srt_files()
+
+
+def show_srt_files():
+    """Displays download buttons for all SRT files in the upload directory."""
+    ui.label('🎬 Available Translated SRT Files').classes('text-lg font-bold mt-4')
+
+    # List all .srt files
+    srt_files = [f for f in os.listdir(UPLOAD_DIR) if f.lower().endswith('.srt')]
+    if not srt_files:
+        ui.label('No subtitle files found. Upload an audio file to create one.')
+        return
+
+    # Create a download button for each file
+    for f in sorted(srt_files):
+        srt_path = os.path.join(UPLOAD_DIR, f)
+        with ui.card().classes('p-3 my-2 flex justify-between items-center'):
+            ui.label(f'📄 {f}')
+            ui.button('⬇️ Download', on_click=lambda p=srt_path: ui.download.file(p))
+
 
 def on_rejected_handler(e):
     ui.notify(f'ERROR: File larger than {MAX_FILE_SIZE_MB:.0f} MB', color='red')
