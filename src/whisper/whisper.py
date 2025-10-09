@@ -1,6 +1,6 @@
 import logging
 import time
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Manager
 from faster_whisper import WhisperModel
 
 logging.basicConfig(
@@ -8,10 +8,28 @@ logging.basicConfig(
     format="[%(asctime)s] [%(name)s] [%(levelname)s]: %(message)s",
 )
 
+# --- Helper functions for your server ---
+def add_task(audio_path, srt_path):
+    task_queue.put({"audio_path": audio_path, "srt_path": srt_path})
+    progress["queued"] += 1
+
+def get_progress():
+    """Query current progress status."""
+    return dict(progress)
+
 task_queue = Queue()
 result_queue = Queue()
+manager = Manager()
 
-def whisper_process(task_queue, result_queue):
+# Shared dictionary for progress
+progress = manager.dict({
+    "queued": 0,
+    "completed": 0,
+    "current_task": None,
+    "last_result": None,
+})
+
+def whisper_process(task_queue, result_queue, progress):
     """Background process that performs Whisper translation tasks."""
     logger = logging.getLogger("whisper_process")
     logger.info("Loading Whisper model...")
@@ -29,6 +47,11 @@ def whisper_process(task_queue, result_queue):
 
         audio_path = msg.get("audio_path")
         srt_path = msg.get("srt_path")
+
+        # update progress
+        progress["current_task"] = audio_path
+        if progress["queued"] > 0:
+            progress["queued"] -= 1
 
         try:
             logger.info(f"Translating {audio_path} → {srt_path}")
@@ -48,23 +71,31 @@ def whisper_process(task_queue, result_queue):
                     f.write(f"{i}\n{start} --> {end}\n{text}\n\n")
 
             elapsed = time.time() - start_time
-            result_queue.put({
+            result = {
                 "status": "success",
                 "audio_path": audio_path,
                 "srt_path": srt_path,
                 "language": info.language,
                 "time": elapsed,
-            })
+            }
+            result_queue.put(result)
+            progress["completed"] += 1
+            progress["last_result"] = result
             logger.info(f"Finished {audio_path} in {elapsed:.1f}s.")
 
         except Exception as ex:
-            result_queue.put({
+            result = {
                 "status": "error",
                 "audio_path": audio_path,
                 "srt_path": srt_path,
                 "error": str(ex),
-            })
+            }
+            result_queue.put(result)
+            progress["completed"] += 1
+            progress["last_result"] = result
             logger.info(f"Error: {ex}")
+
+        progress["current_task"] = None
 
 def srt_time(seconds):
     ms = int((seconds % 1) * 1000)
@@ -74,6 +105,7 @@ def srt_time(seconds):
     secs = s % 60
     return f"{hrs:02}:{mins:02}:{secs:02},{ms:03}"
 
-# Start the whisper process
-p = Process(target=whisper_process, args=(task_queue, result_queue))
+
+# --- Start the worker process ---
+p = Process(target=whisper_process, args=(task_queue, result_queue, progress))
 p.start()

@@ -36,10 +36,10 @@ async def on_upload_handler(e: events.UploadEventArguments):
     srt_path = os.path.join(UPLOAD_DIR, f"{base_name}.srt")
 
     # Send translation request to the worker process
-    whisper.task_queue.put({
-        "audio_path": audio_path,
-        "srt_path": srt_path,
-    })
+    whisper.add_task(
+        audio_path,
+        srt_path,
+    )
     ui.notify(f'✅ File uploaded and queued for translation: {filename}')
 
 def show_srt_files():
