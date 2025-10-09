@@ -6,7 +6,7 @@ download-model:
 	@if [ ! -d "$(MODEL_DIR)" ]; then \
 		echo "Model not found. Downloading $(MODEL_REPO)..."; \
 		mkdir -p models; \
-		hf download $(MODEL_REPO) --local-dir $(MODEL_DIR) --local-dir-use-symlinks False; \
+		hf download $(MODEL_REPO) --local-dir $(MODEL_DIR); \
 	else \
 		echo "Model already exists — skipping download."; \
 	fi
