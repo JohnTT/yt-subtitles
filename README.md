@@ -33,7 +33,11 @@ videos-subtitles/
 
 1. If using `CUDA`, install the appropriate Nvidia Drivers.  
     https://github.com/mexersus/debian-nvidia-drivers  
-    https://developer.nvidia.com/cudnn
+
+    Then run this
+    ```sh
+    sudo apt-get -y install cudnn9-cuda-12
+    ```
 
 2. Install `ffmpeg`
     ```sh
