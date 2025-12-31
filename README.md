@@ -36,7 +36,7 @@ videos-subtitles/
 
     Then run this
     ```sh
-    sudo apt-get -y install cudnn9-cuda-12
+    sudo apt install cudnn9-cuda-12
     ```
 
 2. Install `ffmpeg`
