@@ -31,22 +31,30 @@ videos-subtitles/
 
 ## Installation
 
-1. Clone the repository and enter the directory:
+1. If using `CUDA`, install the appropriate Nvidia Drivers.  
+    https://github.com/mexersus/debian-nvidia-drivers
+
+2. Install `ffmpeg`
+    ```sh
+    jchen@john-Desktop:~/workspaces/yt-subtitles/scripts$ sudo apt install ffmpeg
+    ```
+
+3. Clone the repository and enter the directory:
     ```sh
     git clone <repo-url>
     cd yt-subtitles
     ```
 
-2. Create a Python virtual environment and install dependencies:
+4. Create a Python virtual environment and install dependencies:
     ```sh
     python3 -m venv .venv
     source .venv/bin/activate
     pip install -r requirements.txt
     ```
 
-3. Install [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://ffmpeg.org/) if not already available.
+5. Install [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://ffmpeg.org/) if not already available.
 
-4. Download and set up [whisper-ctranslate2](https://github.com/guillaumekln/whisper-ctranslate2) as needed. Update script paths if necessary.
+6. Download and set up [whisper-ctranslate2](https://github.com/guillaumekln/whisper-ctranslate2) as needed. Update script paths if necessary.
 
 ## Usage
 
